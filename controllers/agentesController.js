@@ -111,7 +111,7 @@ async function patchAgente(req, res){
     let corpoAgente = req.body;
     let idAgente = toBigInt(req.params.id);
     
-    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseAgente.partial(), corpoAgente);
+    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseAgente.partial().strict(), corpoAgente);
     if(!resultadoParametros.success){
         return res.status(400).json(resultadoParametros)
     } else {
