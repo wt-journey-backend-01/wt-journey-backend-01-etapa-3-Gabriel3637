@@ -14,12 +14,12 @@ exports.seed = async function(knex) {
     {
       nome: 'Ana Silva',
       dataDeIncorporacao: new Date('2000-05-12'),
-      cargo: 'investigador'
+      cargo: 'inspetor'
     },
     {
       nome: 'Rommel Carneiro',
       dataDeIncorporacao: new Date('1995-03-22'),
-      cargo: 'escrivao'
+      cargo: 'delegado'
     },
     {
       nome: 'Carlos Mendes',
@@ -29,7 +29,7 @@ exports.seed = async function(knex) {
     {
       nome: 'Beatriz Costa',
       dataDeIncorporacao: new Date('2010-07-19'),
-      cargo: 'investigador'
+      cargo: 'inspetor'
     },
     {
       nome: 'Rommel Carneiro',
@@ -39,12 +39,12 @@ exports.seed = async function(knex) {
     {
       nome: 'Juliana Pereira',
       dataDeIncorporacao: new Date('1998-02-15'),
-      cargo: 'escrivao'
+      cargo: 'delegado'
     },
     {
       nome: 'Marcos Lima',
       dataDeIncorporacao: new Date('2000-05-12'),
-      cargo: 'investigador'
+      cargo: 'inspetor'
     },
     {
       nome: 'Ana Silva',
@@ -54,17 +54,17 @@ exports.seed = async function(knex) {
     {
       nome: 'Pedro Almeida',
       dataDeIncorporacao: new Date('1992-10-04'),
-      cargo: 'escrivao'
+      cargo: 'delegado'
     },
     {
       nome: 'Fernanda Oliveira',
       dataDeIncorporacao: new Date('2003-04-10'),
-      cargo: 'investigador'
+      cargo: 'inspetor'
     },
     {
       nome: 'Rommel Carneiro',
       dataDeIncorporacao: new Date('2010-07-19'),
-      cargo: 'escrivao'
+      cargo: 'inspetor'
     },
     {
       nome: 'Lucas Souza',
@@ -74,12 +74,12 @@ exports.seed = async function(knex) {
     {
       nome: 'Ana Silva',
       dataDeIncorporacao: new Date('2005-11-30'),
-      cargo: 'investigador'
+      cargo: 'inspetor'
     },
     {
       nome: 'Mariana Rocha',
       dataDeIncorporacao: new Date('2015-09-25'),
-      cargo: 'escrivao'
+      cargo: 'inspetor'
     },
     {
       nome: 'Carlos Mendes',
@@ -89,12 +89,12 @@ exports.seed = async function(knex) {
     {
       nome: 'Beatriz Costa',
       dataDeIncorporacao: new Date('2003-04-10'),
-      cargo: 'investigador'
+      cargo: 'inspetor'
     },
     {
       nome: 'Rommel Carneiro',
       dataDeIncorporacao: new Date('2000-05-12'),
-      cargo: 'escrivao'
+      cargo: 'inspetor'
     },
     {
       nome: 'Ana Silva',
@@ -104,7 +104,7 @@ exports.seed = async function(knex) {
     {
       nome: 'Paulo Santos',
       dataDeIncorporacao: new Date('1992-10-04'),
-      cargo: 'investigador'
+      cargo: 'inspetor'
     }
   ]);
 };

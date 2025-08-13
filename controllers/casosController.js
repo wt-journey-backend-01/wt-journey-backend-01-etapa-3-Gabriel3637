@@ -188,7 +188,22 @@ async function getAgenteCaso(req, res){
                     }]
                 })
             }else{
-                return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, toBigInt(resultadoCaso.agente_id)).then((resultado)=>validarRepository(resultado, res, 200));
+                return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, toBigInt(resultadoCaso.agente_id)).then((resultado)=>{
+                    if(resultado){
+                        if(resultado.success === false){
+                            return res.status(404).json(resultado)
+                        } else {
+                            resultado.dataDeIncorporacao = resultado.dataDeIncorporacao.toLocaleDateString('en-CA')
+                            resultado = {
+                                success: true,
+                                ...resultado
+                            }
+                        }
+                        return res.status(200).json(resultado);
+                    }else {
+                        return res.status(500).send()
+                    }
+                });
             };
         }
     });
@@ -205,9 +220,10 @@ async function pesquisarCasos(req, res){
                 message: "O parâmetro 'q' é obrigatório para pesquisa"
             }]
         })
+    } else {
+        return casosRepository.read({}, null, null, pesquisa).then((resultado) => validarRepository(resultado, res, 200));
     }
 
-    return casosRepository.read({}, null, null, pesquisa).then((resultado) => validarRepository(resultado, res, 200))
 }
 
 module.exports = {
