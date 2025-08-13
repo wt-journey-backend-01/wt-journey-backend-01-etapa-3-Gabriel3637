@@ -1,299 +1,204 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 8 créditos restantes para usar o sistema de feedback AI.
+Você tem 7 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para Gabriel3637:
 
-Nota final: **56.7/100**
+Nota final: **97.7/100**
 
-Olá, Gabriel3637! 👋🚀
+# Feedback para Gabriel3637 🚓✨
 
-Antes de tudo, parabéns pelo esforço e pela entrega do seu projeto! 🎉 Você conseguiu implementar diversas funcionalidades essenciais, como a criação, leitura, atualização e deleção de agentes e casos, além de ter estruturado seu projeto com rotas, controllers e repositories, o que é fundamental para uma aplicação escalável e organizada. Além disso, você já começou a implementar alguns filtros e buscas, o que é um ótimo passo para deixar sua API mais robusta! 👏👏
+Olá, Gabriel! Primeiro, parabéns pelo empenho e pela entrega desse projeto tão robusto! 🎉 Seu código está muito bem organizado, você estruturou direitinho os controllers, repositories, rotas e a integração com o banco de dados via Knex.js está clara e funcional. Isso é essencial para uma API escalável e de fácil manutenção. 👏
 
-Agora, vamos juntos analisar alguns pontos que podem ser aprimorados para deixar seu projeto ainda mais sólido e alinhado com as melhores práticas, combinado? 😉
-
----
-
-## 1. Estrutura do Projeto — Está Quase Lá! 🏗️
-
-Sua estrutura de diretórios está muito próxima do esperado, o que é ótimo! Só reforço que manter a organização clara entre `db/` (com migrations, seeds e db.js), `routes/`, `controllers/`, `repositories/` e `utils/` é essencial para manter o código escalável e fácil de manter.
-
-Você já tem essa estrutura, o que é um ponto super positivo! Só fique atento para sempre manter essa divisão bem clara e evitar misturar responsabilidades dentro dos arquivos.
+Também quero destacar que você foi além do obrigatório, implementando vários recursos bônus, como a filtragem de casos por status e agente, o que mostra que você está realmente se aprofundando no assunto. Muito legal! 🚀
 
 ---
 
-## 2. Validação e Tratamento de Erros — Vamos Ajustar para Evitar Dados Inválidos 🚨
+## O que está funcionando muito bem 👌
 
-### Problema detectado: você consegue criar casos com título e descrição vazios, o que não é esperado.
-
-Ao analisar seu arquivo de migration para a tabela `casos`, notei um detalhe importante:
-
-```js
-table.string('titulo').notNullable;  // <-- Aqui está faltando os parênteses!
-table.string('descricao').notNullable;
-```
-
-O método `.notNullable` deve ser chamado com parênteses para funcionar corretamente:
-
-```js
-table.string('titulo').notNullable();
-table.string('descricao').notNullable();
-```
-
-Sem os parênteses, essa restrição não está sendo aplicada no banco, permitindo que títulos e descrições vazias sejam inseridos.
-
-Além disso, no seu controller `casosController.js`, na função `postCaso`, você tem essa validação:
-
-```js
-let resultado = tratadorErro.validarScheme(tratadorErro.EsquemaBaseCaso.strict(), corpoCaso);
-if(resultado.success){
-    return res.status(400).json(resultado)
-} else {
-    // ...
-}
-```
-
-Aqui parece que a lógica está invertida: se `resultado.success` for **true**, você está retornando erro 400 — o que não faz sentido, pois `success === true` indica que a validação passou.
-
-O correto seria:
-
-```js
-if(!resultado.success){
-    return res.status(400).json(resultado);
-} else {
-    // continua o fluxo normal
-}
-```
-
-Isso explica por que você consegue criar casos com dados inválidos — a validação não está barrando os dados errados como deveria.
-
-Esse mesmo padrão aparece em outras funções do seu controller de casos, como no `patchCaso`. Recomendo revisar todas as validações para garantir que o fluxo está coerente com o resultado do `validarScheme`.
+- A arquitetura modular está correta: controllers, repositories, routes, db e utils estão no lugar certo, seguindo o padrão esperado.
+- Configuração do Knex e do banco PostgreSQL está bem feita, com `knexfile.js` usando variáveis de ambiente e a conexão no `db/db.js`.
+- As migrations para criar as tabelas `agentes` e `casos` estão bem definidas, incluindo a relação entre elas (foreign key `agente_id`).
+- Os seeds estão populando as tabelas com dados coerentes e variados.
+- As operações CRUD para agentes e casos funcionam corretamente, incluindo validações e tratamento de erros.
+- Retornos de status HTTP estão corretos para a maioria dos casos.
+- Implementou corretamente endpoints extras, como filtragem e busca por palavras-chave nos casos, além da listagem de casos por agente.
 
 ---
 
-## 3. Uso de BigInt — Cuidado com Conversões e Validações ⚠️
+## Pontos para melhorar e onde podemos evoluir juntos 🕵️‍♂️
 
-Você utiliza a função `toBigInt` para converter IDs, o que é uma boa prática para garantir que os IDs sejam tratados corretamente.
+### 1. Validação e retorno para PATCH em agentes com payload incorreto
 
-Exemplo:
+Você tem uma validação robusta para o método PATCH, usando o esquema parcial do Zod, o que é ótimo! Porém, notei que o teste que falhou indica que, ao enviar um payload incorreto em PATCH para `/agentes/:id`, a API não está retornando o status 400 como esperado.
+
+Analisando seu código em `agentesController.js`, especificamente na função `patchAgente`:
 
 ```js
-function toBigInt(valor){
-    try{
-        return BigInt(valor);
-    }catch(err){
-        return valor;
+async function patchAgente(req, res){
+    let corpoAgente = req.body;
+    let idAgente = toBigInt(req.params.id);
+    
+    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseAgente.partial(), corpoAgente);
+    if(!resultadoParametros.success){
+        return res.status(400).json(resultadoParametros)
+    } else {
+        // ...
     }
 }
 ```
 
-Porém, percebi que em alguns pontos você chama `toBigInt` antes de validar o ID, e em outros a validação é feita antes — é importante manter a ordem para evitar erros.
+Aqui você está validando o corpo com o esquema parcial, o que está correto. Então, a causa mais provável desse problema é que o esquema parcial do Zod (`EsquemaBaseAgente.partial()`) pode não estar cobrindo todos os casos esperados, ou a função `validarScheme` pode não estar tratando corretamente os erros do Zod, fazendo com que o resultado não tenha a propriedade `success` como esperado.
 
-Além disso, no `patchCaso`, você tem:
+**O que fazer?**
+
+- Verifique se sua função `validarScheme` está realmente retornando um objeto com a propriedade `success` igual a `false` quando a validação falha.
+- Confirme que o esquema parcial do Zod está configurado para capturar erros de forma adequada.
+- Uma forma de garantir isso é usar o método `safeParse` do Zod, que retorna um objeto com `success` booleano e `error` em caso de falha.
+
+Exemplo simplificado para validação com Zod:
 
 ```js
-let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseCaso.partial(), corpoCaso);
+const resultadoParametros = tratadorErro.EsquemaBaseAgente.partial().safeParse(corpoAgente);
 if(!resultadoParametros.success){
-    return res.status(404).json(resultadoParametros)
-} else {
-    // ...
-}
-```
-
-Aqui o status 404 não é o mais adequado para erro de validação — o correto seria 400 (Bad Request). O 404 é para recurso não encontrado, não para payload inválido.
-
----
-
-## 4. Consultas com Filtros e Ordenação — Ajuste na Direção da Ordenação 🔍
-
-No seu controller, você trata a direção da ordenação assim:
-
-```js
-if(ordenar){
-    if(ordenar[0] == '-'){
-        ordenar = ordenar.slice(1)
-        direcao = 'DESC';
-    }else{
-        direcao = 'CRESC';
-    }
-}
-```
-
-O valor correto para o Knex no parâmetro de direção é `'asc'` (ou `'ASC'`), e não `'CRESC'`. Isso pode estar fazendo com que a ordenação não funcione como esperado.
-
-Recomendo ajustar para:
-
-```js
-direcao = 'asc';
-```
-
-Assim:
-
-```js
-if(ordenar){
-    if(ordenar[0] == '-'){
-        ordenar = ordenar.slice(1)
-        direcao = 'desc';
-    }else{
-        direcao = 'asc';
-    }
-}
-```
-
----
-
-## 5. Consulta com `whereILike` e `orWhereILike` — Atenção à Precedência das Condições 🧐
-
-No seu `casosRepository.js`, dentro da função `read`, você tem:
-
-```js
-if(query){
-    result = await db("casos").where(filtro).whereILike('titulo', "%" + query + "%").orWhereILike('descricao', "%" + query + "%");
-} else {
-    result = await db("casos").where(filtro)
-}
-```
-
-Esse código pode gerar uma consulta SQL que não filtra corretamente, porque o `orWhereILike` pode ser aplicado sem agrupar as condições, causando resultados inesperados.
-
-Para garantir que o filtro funcione corretamente, você pode agrupar as condições do `whereILike` e `orWhereILike` usando uma função callback:
-
-```js
-if(query){
-    result = await db("casos")
-        .where(filtro)
-        .andWhere(function(){
-            this.whereILike('titulo', `%${query}%`).orWhereILike('descricao', `%${query}%`)
-        });
-} else {
-    result = await db("casos").where(filtro);
-}
-```
-
-Assim, você garante que o filtro por título ou descrição seja aplicado corretamente junto com os outros filtros.
-
----
-
-## 6. Migrations — Pequenos Ajustes para Garantir Integridade do Banco 💾
-
-Além do erro no `.notNullable` (que já comentamos), repare na sua migration dos casos:
-
-```js
-table.string('status').notNullable().checkIn(['aberto', 'solucionado']);
-```
-
-O método correto do Knex para restrição de enum é `.checkIn`? Na verdade, o Knex não tem suporte nativo para `checkIn`. Você pode usar o tipo `enu` para isso, que cria um enum no PostgreSQL:
-
-```js
-table.enu('status', ['aberto', 'solucionado']).notNullable();
-```
-
-Isso ajuda a garantir que o campo `status` só aceite esses valores, reforçando a integridade dos dados.
-
----
-
-## 7. Mensagens de Erro Customizadas — Um Extra que Pode Melhorar Muito a Experiência do Usuário ✨
-
-Você já está usando um utilitário de tratamento de erros (`errorHandler.js`) e validando com `zod`, o que é excelente! Porém, algumas mensagens de erro podem ser mais claras e padronizadas.
-
-Por exemplo, no seu controller de casos, na função `getAgenteCaso`, você tem:
-
-```js
-if(!resultadoCaso.agente_id){
-    return res.status(404).json({
+    return res.status(400).json({
         success: false,
-        errors: [{
-            path: ["agente_id"],
-            message: "O caso não possui agente reponsável"
-        }]
-    })
+        errors: resultadoParametros.error.errors
+    });
 }
 ```
 
-Esse tipo de mensagem ajuda muito o consumidor da API a entender o problema. Continue nessa linha para todas as validações!
+Assim, você garante que o retorno sempre terá a estrutura esperada para o cliente da API.
 
----
+### 2. Falha nos endpoints bônus relacionados a busca e filtragem
 
-## 8. Pequenos Detalhes que Fazem a Diferença no Código 👌
+Você conseguiu implementar a filtragem simples por status e agente, o que é ótimo! Porém, percebi que os endpoints bônus para buscar o agente responsável por um caso, buscar casos de um agente, e a busca por keywords no título/descrição dos casos não estão funcionando como esperado.
 
-- No `casosController.js`, na função `deleteCaso`, você faz:
+Exemplo do método `getAgenteCaso` em `casosController.js`:
 
 ```js
-let resultado = casosRepository.remove(casoId);
-if(resultado){
-    return res.status(204).send();
-} else {
-    return res.status(500).send()
+async function getAgenteCaso(req, res){
+    let idCaso = toBigInt(req.params.caso_id);
+
+    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultadoCaso) => {
+        if(!resultadoCaso.success){
+            return res.status(404).json(resultadoCaso)
+        } else {
+            if(!resultadoCaso.agente_id){
+                return res.status(404).json({
+                    success: false,
+                    errors: [{
+                        path: ["agente_id"],
+                        message: "O caso não possui agente reponsável"
+                    }]
+                })
+            }else{
+                return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, toBigInt(resultadoCaso.agente_id)).then((resultado)=>validarRepository(resultado, res, 200));
+            };
+        }
+    });
 }
 ```
 
-Aqui, `casosRepository.remove` é uma função assíncrona (usa `await` internamente), mas você não está aguardando o resultado. Isso pode fazer com que o `if(resultado)` seja avaliado antes da remoção terminar.
+Aqui, o problema está no uso do `resultado` dentro do último `.then`. Você está passando `resultado` para `validarRepository`, mas `resultado` não está definido nesse escopo — provavelmente quis usar `resultado` que vem do segundo `validarSchemeAsync`.
 
-Corrija para:
+Além disso, para buscar o agente do caso, você precisa realmente buscar no banco o agente com o `id` igual ao `agente_id` do caso, usando o repository `agentesRepository.read({id: agente_id})`. 
+
+**Solução sugerida:**
+
+Refatore essa função para algo assim:
 
 ```js
-let resultado = await casosRepository.remove(casoId);
-if(resultado){
-    return res.status(204).send();
-} else {
-    return res.status(500).send();
+async function getAgenteCaso(req, res){
+    let idCaso = toBigInt(req.params.caso_id);
+
+    const resultadoCaso = await tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso);
+    if(!resultadoCaso.success){
+        return res.status(404).json(resultadoCaso);
+    }
+
+    if(!resultadoCaso.agente_id){
+        return res.status(404).json({
+            success: false,
+            errors: [{
+                path: ["agente_id"],
+                message: "O caso não possui agente responsável"
+            }]
+        });
+    }
+
+    const agenteId = toBigInt(resultadoCaso.agente_id);
+    const agente = await agentesRepository.read({id: agenteId});
+    if(!agente){
+        return res.status(404).json({
+            success: false,
+            errors: [{
+                path: ["agente_id"],
+                message: "Agente responsável não encontrado"
+            }]
+        });
+    }
+
+    return res.status(200).json({
+        success: true,
+        ...agente
+    });
 }
 ```
 
-Essa atenção ao uso correto do `async/await` evita bugs difíceis de detectar.
+Essa abordagem é mais clara, usa `async/await` para facilitar a leitura e garante que você está buscando o agente correto no banco.
+
+### 3. Organização e estrutura do projeto
+
+Sua estrutura de diretórios está muito bem montada, exatamente como esperado:
+
+```
+.
+├── db/
+│   ├── migrations/
+│   ├── seeds/
+│   └── db.js
+├── routes/
+│   ├── agentesRoutes.js
+│   └── casosRoutes.js
+├── controllers/
+│   ├── agentesController.js
+│   └── casosController.js
+├── repositories/
+│   ├── agentesRepository.js
+│   └── casosRepository.js
+└── utils/
+    └── errorHandler.js
+```
+
+Isso é um ponto forte do seu projeto! 👍 Continue mantendo essa organização, pois facilita muito a manutenção e evolução do código.
 
 ---
 
-## 9. Parabéns pelos Bônus Conquistados! 🎖️
+## Recomendações de estudo para você continuar brilhando 💡
 
-Mesmo com esses pontos a melhorar, você já implementou várias funcionalidades bônus importantes:
-
-- Filtragem de agentes por data de incorporação com ordenação.
-- Busca de agente responsável por caso.
-- Filtragem de casos por status, agente e por palavras-chave no título/descrição.
-- Mensagens de erro customizadas para argumentos inválidos.
-
-Isso mostra que você está caminhando para um domínio avançado do desenvolvimento de APIs REST com Node.js, Express e PostgreSQL! Continue assim! 💪
+- Para entender melhor a validação com Zod e como manipular erros para retornar 400 corretamente, recomendo este vídeo: [Validação de Dados em APIs Node.js/Express](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_).
+- Para aprofundar no uso do Knex e garantir queries corretas, veja o guia oficial: [Knex.js Query Builder](https://knexjs.org/guide/query-builder.html).
+- Caso queira reforçar a arquitetura MVC e organização do projeto, este vídeo é excelente: [Arquitetura MVC em Node.js](https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH).
+- Para entender melhor o uso dos status HTTP e quando usar 400, 404, 201 e outros, recomendo: [HTTP Status Codes Explicados](https://youtu.be/RSZHvQomeKE).
 
 ---
 
-## Recursos para Você Aprofundar e Corrigir os Pontos Acima 📚
+## Resumo rápido dos pontos para focar 🚦
 
-- Para corrigir a configuração do banco, migrations e seeds:  
-  https://knexjs.org/guide/migrations.html  
-  https://knexjs.org/guide/seeds.html  
-  http://googleusercontent.com/youtube.com/docker-postgresql-node
-
-- Para entender melhor validação e tratamento de erros HTTP (400, 404):  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404  
-  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
-
-- Para consultas mais precisas com Knex e uso correto de filtros:  
-  https://knexjs.org/guide/query-builder.html
-
-- Para organizar seu código em MVC e manter tudo limpo:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+- **Corrigir a validação do payload no PATCH para agentes**, garantindo que payloads inválidos retornem status 400 corretamente.
+- **Ajustar a lógica dos endpoints bônus que buscam agentes relacionados a casos e casos relacionados a agentes**, especialmente corrigindo o uso incorreto de variáveis e buscando os dados corretamente no banco.
+- **Garantir que o tratamento de erros com Zod e a função `validarScheme` estejam alinhados**, retornando sempre um objeto consistente para o cliente.
+- Continuar explorando e fortalecendo o uso do Knex para consultas complexas e filtragens.
+- Manter a ótima organização do projeto!
 
 ---
 
-## Resumo dos Principais Pontos para Focar Agora 🎯
+Gabriel, seu projeto está muito sólido e você está no caminho certo para se tornar um especialista em Node.js com banco de dados! 🚀 Continue praticando, revisando seu código e testando suas APIs. Se precisar, volte aos recursos que indiquei para consolidar seu aprendizado.
 
-- Corrigir chamadas de `.notNullable()` nas migrations para garantir integridade dos dados.  
-- Ajustar a validação no controller de casos para que o fluxo condicional esteja correto (usar `if(!resultado.success)` para erros).  
-- Usar `enu` no lugar de `checkIn` para enumeração no campo `status` da tabela `casos`.  
-- Corrigir a direção da ordenação para `'asc'` e `'desc'` (não `'CRESC'`).  
-- Ajustar consultas com filtros para agrupar corretamente as condições `whereILike` e `orWhereILike`.  
-- Usar `await` corretamente nas chamadas assíncronas para evitar comportamentos inesperados.  
-- Revisar os status HTTP usados para validadores e erros (usar 400 para payload inválido, 404 para recurso não encontrado).  
+Parabéns pelo esforço e dedicação! Estou aqui torcendo pelo seu sucesso! 💪✨
 
----
-
-Gabriel, você está no caminho certo! 🚀 Com esses ajustes, sua API vai ficar muito mais robusta, confiável e alinhada com o que o mercado espera. Continue praticando, revisando seu código e buscando aprender cada vez mais. Se precisar de ajuda, estarei aqui para te apoiar! 💙
-
-Força e sucesso nessa jornada de desenvolvimento! 💪👨‍💻👩‍💻
-
-Um abraço do seu Code Buddy! 🤖✨
+Abraço do seu Code Buddy! 🤖❤️
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
