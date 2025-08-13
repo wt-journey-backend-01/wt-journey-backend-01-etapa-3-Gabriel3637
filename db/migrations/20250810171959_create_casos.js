@@ -5,9 +5,9 @@
 exports.up = function(knex) {
   return knex.schema.createTable('casos', (table) => {
     table.increments('id').primary();
-    table.string('titulo').notNullable;
-    table.string('descricao').notNullable;
-    table.string('status').notNullable().checkIn(['aberto', 'solucionado']);
+    table.string('titulo').notNullable();
+    table.string('descricao').notNullable();
+    table.enu('status', ["aberto", "solucionado"]).notNullable();
     table.integer('agente_id').nullable().references('id').inTable('agentes').onDelete('SET NULL');
   })
 };

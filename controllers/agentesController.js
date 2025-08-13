@@ -18,7 +18,6 @@ function toBigInt(valor){
 
 function validarRepository(validar, res, statusCode){
     let resultado = null;
-    console.log(validar)
     if(validar){
         if(validar.success === false){
             return res.status(404).json(validar)
@@ -52,7 +51,7 @@ async function getAllAgentes(req, res) {
             ordenar = ordenar.slice(1)
             direcao = 'DESC';
         }else{
-            direcao = 'CRESC';
+            direcao = 'ASC';
         }
     }
     if(id)

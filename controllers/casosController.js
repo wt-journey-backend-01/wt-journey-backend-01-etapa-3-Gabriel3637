@@ -42,7 +42,7 @@ async function getAllCasos(req, res) {
             ordenar = ordenar.slice(1)
             direcao = 'DESC';
         }else{
-            direcao = 'CRESC';
+            direcao = 'ASC';
         }
     }
 
@@ -63,7 +63,9 @@ async function getAllCasos(req, res) {
 async function getCaso(req, res){
     let idCaso = toBigInt(req.params.id);
 
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultado)=> validarRepository(resultado, res, 200));
+    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultado)=> {
+        validarRepository(resultado, res, 200)
+    });
 
 
 }
@@ -74,7 +76,7 @@ async function postCaso(req, res){
     corpoCaso.agente_id = toBigInt(corpoCaso.agente_id);
 
     let resultado = tratadorErro.validarScheme(tratadorErro.EsquemaBaseCaso.strict(), corpoCaso);
-    if(resultado.success){
+    if(!resultado.success){
         return res.status(400).json(resultado)
     } else {
         if(corpoCaso.agente_id){
@@ -131,11 +133,11 @@ async function patchCaso(req, res){
 
     let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseCaso.partial(), corpoCaso);
     if(!resultadoParametros.success){
-        return res.status(404).json(resultadoParametros)
+        return res.status(400).json(resultadoParametros)
     } else {
         return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((casoResultado) => {
             if(!casoResultado.success){
-                return res.status(400).json(casoResultado)
+                return res.status(404).json(casoResultado)
             }else {
                 if(corpoCaso.agente_id){
                     return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, corpoCaso.agente_id).then((agenteResultado) => {
@@ -159,12 +161,13 @@ async function deleteCaso(req, res){
         if(!casoResultado.success){
             return res.status(404).json(casoResultado)
         }else{
-            let resultado = casosRepository.remove(casoId);
-            if(resultado){
-                return res.status(204).send();
-            } else {
-                return res.status(500).send()
-            }
+            return casosRepository.remove(casoId).then((resultado)=> {
+                if(resultado){
+                    return res.status(204).send();
+                } else {
+                    return res.status(500).send()
+                }
+            });
         }
     });
 }
@@ -194,7 +197,6 @@ async function getAgenteCaso(req, res){
 
 async function pesquisarCasos(req, res){
     const pesquisa = req.query.q;
-    console.log(pesquisa);
     if (!pesquisa){
         return res.status(400).json({
             success: false,

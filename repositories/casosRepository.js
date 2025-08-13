@@ -7,13 +7,17 @@ async function read(filtro = {}, ordenacao = null, direcao = null, query = null)
         let result = false
         if(ordenacao && direcao){
             if(query){
-                result = await db("casos").where(filtro).orderBy(ordenacao, direcao).whereILike('titulo', "%" + query + "%").orWhereILike('descricao', "%" + query + "%");
+                result = await db("casos").where(filtro).orderBy(ordenacao, direcao).andWhere(function(){
+                    this.whereILike('titulo', `%${query}%`).orWhereILike('descricao', `%${query}%`)
+                });
             }else {
                 result = await db("casos").where(filtro).orderBy(ordenacao, direcao)
             }
         } else {
             if(query){
-                result = await db("casos").where(filtro).whereILike('titulo', "%" + query + "%").orWhereILike('descricao', "%" + query + "%");
+                result = await db("casos").where(filtro).andWhere(function(){
+                    this.whereILike('titulo', `%${query}%`).orWhereILike('descricao', `%${query}%`)
+                });
             }else {
                 result = await db("casos").where(filtro)
             }
@@ -67,9 +71,6 @@ async function update(id, objUpdate) {
         return false;
     }
 }
-
-
-//read({}, null, null, "homicidio").then(caso => console.log(caso))
 
 module.exports = {
     read,
