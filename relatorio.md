@@ -1,266 +1,302 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 5 créditos restantes para usar o sistema de feedback AI.
+Você tem 9 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para Gabriel3637:
 
-Nota final: **100.0/100**
+Nota final: **97.4/100**
 
-# Feedback para Gabriel3637 🚓👮‍♂️
+# Feedback para Gabriel3637 🚓✨
 
-Olá Gabriel! Primeiro, parabéns pelo trabalho incrível que você entregou! 🎉 Conseguiu implementar toda a persistência no banco PostgreSQL, usando Knex.js com migrations, seeds, controllers, repositories e rotas muito bem organizados. Seu código está modular, limpo e com tratamento de erros, o que é essencial para uma API robusta. Além disso, você ainda foi além e implementou filtros por status e agente nos casos, o que é um bônus muito legal! 👏👏
-
----
-
-## O que está muito bem feito 🏅
-
-- **Arquitetura modular:** Você manteve a separação clara entre rotas, controllers e repositories, o que facilita a manutenção e evolução do projeto.
-- **Configuração do Knex e banco:** Seu `knexfile.js`, `db.js` e arquivos de migrations/seeds estão configurados corretamente, garantindo a criação das tabelas e a inserção dos dados iniciais.
-- **Validação e tratamento de erros:** O uso do Zod para validação dos dados de entrada e o tratamento de erros customizado demonstra maturidade no desenvolvimento da API.
-- **Endpoints básicos funcionando:** Todas as operações CRUD para agentes e casos estão implementadas e funcionando corretamente, retornando os status HTTP esperados.
-- **Filtros simples implementados:** Você conseguiu implementar a filtragem de casos por status e agente, que são funcionalidades extras que enriquecem a API.
+Olá Gabriel! Antes de mais nada, parabéns pelo esforço e pela nota incrível que você conquistou! 🎉 Você conseguiu implementar muito bem a base da API REST com Express e PostgreSQL, utilizando Knex.js, e ainda foi além ao entregar funcionalidades bônus que agregam bastante valor ao projeto. Isso mostra seu comprometimento e dedicação — continue assim! 👏
 
 ---
 
-## Pontos para aprimorar e destravar funcionalidades extras 🚀
+## 🎯 Pontos Fortes que Merecem Destaque
 
-Ao analisar seu código, percebi que alguns endpoints bônus e funcionalidades de filtragem avançada ainda não estão 100% completos, o que pode estar relacionado a pequenos detalhes que vamos destrinchar aqui.
+- Você estruturou seu projeto de forma muito organizada, com pastas claras para `controllers`, `repositories`, `routes`, `db` (com `migrations` e `seeds`), e `utils`. Isso facilita a manutenção e escalabilidade do código. Ótimo trabalho! 🗂️
 
-### 1. Endpoint de busca do agente responsável por um caso (`GET /casos/:caso_id/agente`)
+- A integração com o banco de dados via Knex está bem feita, com configuração correta no `knexfile.js` e no arquivo `db/db.js`. Você usou o ambiente correto (`NODE_ENV`) para carregar as configurações, o que é uma boa prática.
 
-Vi que você já criou a rota e o controller para buscar o agente de um caso, mas o teste bônus não passou. Isso geralmente acontece porque:
+- As migrations para criação das tabelas `agentes` e `casos` estão implementadas corretamente, com os tipos e relações adequadas, incluindo o uso do `onDelete('SET NULL')` para manter integridade referencial.
 
-- No controller `getAgenteCaso`, você faz uma validação do caso e depois tenta buscar o agente pelo `agente_id` do caso, o que está correto. Porém, há um pequeno erro na forma como você verifica o resultado da busca do agente:
+- Os seeds para popular as tabelas também estão muito bem elaborados, garantindo dados iniciais variados para testes.
 
-```js
-return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultadoCaso) => {
-    if(!resultadoCaso.success){
-        return res.status(404).json(resultadoCaso)
-    } else {
-        if(!resultadoCaso.agente_id){
-            return res.status(404).json({
-                success: false,
-                errors: [{
-                    path: ["agente_id"],
-                    message: "O caso não possui agente reponsável"
-                }]
-            })
-        }else{
-            return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, toBigInt(resultadoCaso.agente_id)).then((resultado)=>{
-                if(resultado){
-                    if(resultado.success === false){
-                        return res.status(404).json(resultado)
-                    } else {
-                        resultado.dataDeIncorporacao = resultado.dataDeIncorporacao.toLocaleDateString('en-CA')
-                        resultado = {
-                            success: true,
-                            ...resultado
-                        }
-                    }
-                    return res.status(200).json(resultado);
-                }else {
-                    return res.status(500).send()
-                }
-            });
-        };
-    }
-});
-```
+- As rotas e controllers estão organizados, e você implementou validações usando middleware, além de retornar status HTTP coerentes para cada situação.
 
-**Análise:**  
-Aqui, o `resultado` dentro do segundo `.then()` é o resultado da validação do esquema do agente, mas você não está buscando o agente no banco de dados. A função `validarSchemeAsync` apenas valida o ID, não busca o registro. Para retornar o agente, você precisa **buscar o agente no banco**, por exemplo:
-
-```js
-return agentesRepository.read({ id: toBigInt(resultadoCaso.agente_id) }).then((agente) => {
-    if (!agente) {
-        return res.status(404).json({
-            success: false,
-            errors: [{
-                path: ["agente_id"],
-                message: "Agente não encontrado"
-            }]
-        });
-    }
-    agente.dataDeIncorporacao = agente.dataDeIncorporacao.toLocaleDateString('en-CA');
-    return res.status(200).json({ success: true, ...agente });
-});
-```
-
-Ou seja, a validação do ID é importante, mas você precisa buscar o agente no banco para retornar os dados. Isso explica por que o teste bônus para esse endpoint não passou.
+- Parabéns por implementar os requisitos bônus que passaram, como a filtragem de casos por status e agente, e as mensagens de erro customizadas para agentes inválidos! Isso mostra que você foi além do básico.
 
 ---
 
-### 2. Endpoint de busca de casos do agente (`GET /agentes/:id/casos`)
+## 🔎 Análise Profunda: Onde o Código Pode Evoluir
 
-Você tem o método `getCasosAgente` no controller de agentes e a rota está definida, mas o teste bônus não passou. Vamos analisar:
+### 1. Problema com o Retorno 404 ao Buscar Caso por ID Inválido
+
+Você mencionou que o endpoint para buscar um caso por ID inválido não está retornando o status 404 como esperado. Ao analisar o seu código, percebi alguns pontos importantes:
+
+No arquivo `controllers/casosController.js`, a função `getCaso` é assim:
 
 ```js
-async function getCasosAgente(req, res) {
-    let agenteId = toBigInt(req.params.id);
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, agenteId).then((agenteResultado) => {
-        if(!agenteResultado.success){
-            return res.status(404).json(agenteResultado)
-        } else {
-            return casosRepository.read({agente_id: agenteId}).then((resultado) => {
-                if(resultado){
-                    return res.status(200).json(resultado)
-                }else{
-                    return res.status(500).send()
-                }
+async function getCaso(req, res){
+    let idCaso = toBigInt(req.params.id);
 
-            })
-        }
-    });
+    let resultado = await casosRepository.findId(idCaso);
+    return validarRepository(resultado, res, 200);
 }
 ```
 
-**Análise:**  
-Aqui, o problema é semelhante: você está validando o ID do agente, mas a função `validarSchemeAsync` não busca o agente no banco, apenas valida o ID. Isso significa que, mesmo que o agente não exista no banco, seu código pode continuar e tentar buscar os casos, retornando uma lista vazia. O teste pode esperar um erro 404 quando o agente não existe.
+O que acontece aqui é que você está convertendo o ID para `BigInt` com a função `toBigInt`. Porém, se o parâmetro `id` for inválido (por exemplo, uma string que não pode ser convertida para `BigInt`), a função `toBigInt` retorna `false`. Mas você não está tratando esse caso antes de chamar o repositório.
 
-**Solução:**  
-Depois de validar o ID, você precisa buscar o agente no banco para confirmar que ele existe:
+Além disso, no repositório `casosRepository.js`, a função `findId` faz uma consulta ao banco e retorna:
+
+- `null` se não encontrar o registro
+- `false` se ocorrer um erro
+
+Na função `validarRepository` do controller, você trata os casos de `null` e `false`:
 
 ```js
-return agentesRepository.read({ id: agenteId }).then((agente) => {
-    if (!agente) {
-        return res.status(404).json({
-            success: false,
-            errors: [{
-                path: ["id"],
-                message: "Agente não encontrado"
-            }]
-        });
+function validarRepository(validar, res, statusCode){
+    if(validar === false){
+        return res.status(500).send()
+    } else if(validar === null){
+        return res.status(404).json(error404Body);
     }
-    return casosRepository.read({ agente_id: agenteId }).then((casos) => {
-        return res.status(200).json(casos);
-    });
-});
-```
-
-Assim você garante que só busca os casos se o agente existir.
-
----
-
-### 3. Endpoint de busca de casos por keywords no título e/ou descrição (`GET /casos/search?q=...`)
-
-Você implementou o método `pesquisarCasos` no controller de casos e passou no teste bônus, parabéns! 🎉
-
-Só uma observação: no trecho abaixo, você retorna um erro 400 se o parâmetro `q` não for enviado, o que está correto:
-
-```js
-if (!pesquisa){
-    return res.status(400).json({
-        success: false,
-        errors: [{
-            path: ["querry"],
-            message: "O parâmetro 'q' é obrigatório para pesquisa"
-        }]
-    })
+    // ...
 }
 ```
 
-Mas o campo `"querry"` tem uma pequena grafia errada — o correto é `"query"`. Isso não impacta funcionalidade, mas fica mais profissional corrigir para evitar confusão.
+Porém, no `getCaso`, você não está verificando se `idCaso` é `false` antes de continuar, o que pode causar uma consulta inválida ao banco e não retornar o 404 esperado.
+
+**Como corrigir?**
+
+Antes de chamar o repositório, valide o ID:
+
+```js
+async function getCaso(req, res){
+    let idCaso = toBigInt(req.params.id);
+
+    if(idCaso === false){
+        // ID inválido, retorna 404
+        return res.status(404).json(error404Body);
+    }
+
+    let resultado = await casosRepository.findId(idCaso);
+    return validarRepository(resultado, res, 200);
+}
+```
+
+Essa pequena alteração garante que IDs inválidos sejam tratados corretamente, evitando consultas desnecessárias e retornando o status correto.
 
 ---
 
-### 4. Filtragem complexa de agentes por `dataDeIncorporacao` com ordenação
+### 2. Uso de `BigInt` para IDs e Consistência com o Banco de Dados
 
-Você passou nos testes bônus para filtros simples, mas não para os filtros complexos que envolvem a data de incorporação com ordenação crescente e decrescente.
-
-Ao analisar o método `getAllAgentes` no controller, você está lendo os parâmetros de query `sort` e `direcao` e passando para o repository, o que está certo. Porém, para que a ordenação funcione com campos de data, é importante garantir que:
-
-- O campo `dataDeIncorporacao` no banco está do tipo `date` (o que está correto na migration).
-- O parâmetro `sort` pode receber o valor `dataDeIncorporacao`.
-- O repository deve aceitar esse campo para ordenar.
-
-Seu repository `read` para agentes está assim:
+Notei que você está usando `BigInt` para manipular os IDs, por exemplo:
 
 ```js
-async function read(filtro = {}, ordenacao = null, direcao = null){
+function toBigInt(valor){
     try{
-        let result = false
-        if(ordenacao && direcao){
-            result = await db("agentes").where(filtro).orderBy(ordenacao, direcao)
-        } else {
-            result = await db("agentes").where(filtro)
+        if(valor === null || valor === undefined){
+            return null;
+        }else {
+            return BigInt(valor);
         }
-        // ...
-    } catch (err) {
-        console.log(err);
+    }catch(err){
         return false;
     }
 }
 ```
 
-**Análise:**  
-Esse código parece correto para o propósito. O motivo provável para a falha no teste bônus é que o parâmetro `sort` não está sendo passado corretamente na requisição, ou o nome do campo está incorreto. Também pode ser que o formato da data esteja dificultando o ordenamento, mas como você usa `date` no banco, o Knex deve ordenar corretamente.
+E nas migrations, suas tabelas definem a coluna `id` como `increments()`, que cria um inteiro serial (normalmente `integer`), não um bigint. Isso pode causar discrepância entre o tipo esperado no código e no banco.
 
-**Sugestão:**  
-Para garantir robustez, você pode validar o parâmetro `sort` para aceitar somente os campos esperados e tratar valores inválidos, para evitar erros silenciosos.
+**Por que isso importa?**
 
----
+- Se o banco está usando `integer` para IDs, mas você está usando `BigInt` no código, pode haver problemas de comparação ou erros sutis.
 
-### 5. Mensagens de erro customizadas para argumentos inválidos
+- Além disso, IDs de agentes e casos são gerados pelo banco e usados como números inteiros padrão.
 
-Os testes bônus que falharam indicam que as mensagens de erro customizadas para IDs inválidos de agente e caso ainda não estão no padrão esperado.
+**Recomendação:**
 
-Você utiliza o Zod para validar os dados e IDs, e tem um `errorHandler` para isso, o que é ótimo! Porém, ao analisar os controllers, percebi que, em alguns casos, quando a validação falha, você retorna diretamente o resultado do Zod, que pode não estar formatado exatamente conforme o esperado.
+Considere usar `Number` no código para IDs, e não `BigInt`. Isso simplifica o tratamento e evita conversões desnecessárias.
 
-Por exemplo, no controller de casos:
+Por exemplo, altere a função `toBigInt` para algo como:
 
 ```js
-return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultado)=> {
-    validarRepository(resultado, res, 200)
-});
+function toInt(valor){
+    const n = Number(valor);
+    if(Number.isNaN(n)) return false;
+    return n;
+}
 ```
 
-Aqui você chama `validarRepository` mas não retorna nada, o que pode causar problemas.
+E ajuste as chamadas no controller e repositório para usar `toInt` ao invés de `toBigInt`.
 
-**Correção simples:**
+---
+
+### 3. Tratamento de Erros de Foreign Key no Repositório de Casos
+
+No arquivo `repositories/casosRepository.js`, você tem um tratamento especial para erro de código `23503` (violação de foreign key):
 
 ```js
-return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultado)=> {
-    return validarRepository(resultado, res, 200);
-});
+async function create(caso){
+    try{
+        const result = await db('casos').insert(caso, ["*"]);
+        return result[0];
+    }catch(err){
+        console.log(err);
+        if(err.code = "23503"){
+            return {code: err.code}
+        }else {
+            return false;
+        }
+    } 
+}
 ```
 
-Além disso, para garantir mensagens customizadas, você pode criar no `errorHandler` funções que formatem os erros do Zod no formato esperado pela API, com campos `success: false` e `errors` detalhados.
+Aqui há um pequeno erro de atribuição: você usou `if(err.code = "23503")` que faz uma atribuição em vez de comparar. Isso faz com que o código sempre entre nesse bloco, o que não é o comportamento esperado.
+
+**Como corrigir?**
+
+Troque o `=` por `===` para fazer a comparação correta:
+
+```js
+if(err.code === "23503"){
+    return {code: err.code}
+}
+```
+
+Esse detalhe é fundamental para que seu código trate corretamente os erros de integridade referencial e retorne o status 404 com mensagem apropriada.
 
 ---
 
-## Dicas extras para você continuar brilhando 💡
+### 4. Falha nos Testes Bônus de Filtragem Complexa e Busca de Relacionamentos
 
-- Para buscar dados relacionados (como o agente de um caso), lembre-se que a validação do ID é só o primeiro passo. Você precisa buscar o registro no banco para retornar os dados reais.
-- Sempre que usar `.then()` em promises, não esqueça de `return` para evitar que o fluxo se perca.
-- Mantenha a padronização das mensagens de erro para melhorar a experiência do consumidor da API.
-- Teste seus endpoints com ferramentas como Postman ou Insomnia para garantir que o comportamento está conforme esperado, especialmente os casos de erro.
+Você implementou bem os filtros simples, mas alguns endpoints bônus que envolvem:
+
+- Filtragem por data de incorporação com ordenação crescente/decrescente
+- Busca de casos do agente (`/agentes/:id/casos`)
+- Busca do agente responsável pelo caso (`/casos/:caso_id/agente`)
+- Filtragem por palavras-chave nos casos
+
+não passaram.
+
+Ao analisar o controller `agentesController.js`, na função `getCasosAgente`:
+
+```js
+async function getCasosAgente(req, res) {
+    let agenteId = toBigInt(req.params.id);
+
+    if(!agenteId){
+        return res.status(404).json(error404Body);
+    }
+
+    let agenteResultado = await agentesRepository.findId(agenteId)
+    if(agenteResultado === null){
+        return res.status(404).json(error404Body);
+    } else if(agenteResultado === false){
+        return res.status(500).send();
+    } else {
+        let resultado = await casosRepository.read({agente_id: agenteId});
+        if(resultado === false){
+            return res.status(500).send()
+        } else {
+            return res.status(200).json(resultado)
+        }
+    }
+}
+```
+
+Aqui, o problema pode estar na forma como você está passando o filtro `{agente_id: agenteId}` para o repositório, considerando que `agente_id` no banco é um inteiro, mas você pode estar usando `BigInt` no código.
+
+Além disso, o método `read` do repositório `casosRepository` espera que o filtro seja um objeto com as chaves e valores exatos para a query `.where(filtro)`. Se o tipo do `agente_id` não bater com o banco, a query pode não retornar resultados.
+
+**Recomendo:**
+
+- Ajustar o tipo de `agenteId` para `Number`, conforme comentado antes.
+
+- Confirmar que o filtro está correto e que o banco tem dados correspondentes.
 
 ---
 
-## Recursos recomendados para aprofundar
+### 5. Ordenação e Filtragem por Data de Incorporação no Agentes
 
-- [Knex.js Migrations](https://knexjs.org/guide/migrations.html) - Para entender melhor como versionar seu banco e garantir que as tabelas estão sempre atualizadas.
-- [Knex.js Query Builder](https://knexjs.org/guide/query-builder.html) - Para dominar as queries e os filtros complexos.
-- [Validação com Zod em Node.js](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_) - Vídeo que explica como validar dados e tratar erros de forma elegante.
-- [HTTP Status Codes e Tratamento de Erros](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400) e [404](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404) - Para entender quando e como usar esses códigos e montar respostas apropriadas.
-- [Arquitetura MVC em Node.js](https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH) - Para manter seu projeto organizado e escalável.
+No controller `agentesController.js`, a função `getAllAgentes` tenta implementar ordenação:
+
+```js
+let ordenar = req.query.sort;
+let direcao = null;
+
+if(ordenar){
+    if(ordenar[0] == '-'){
+        ordenar = ordenar.slice(1)
+        direcao = 'DESC';
+    }else{
+        direcao = 'ASC';
+    }
+}
+```
+
+Isso parece correto, mas é importante garantir que o campo `ordenar` seja exatamente o nome da coluna no banco (`dataDeIncorporacao`).
+
+Além disso, no repositório `agentesRepository.js`, a função `read` usa `.orderBy(ordenacao, direcao)`. Isso está correto, mas vale a pena garantir que o nome do campo passado seja válido.
+
+Se o filtro por `dataDeIncorporacao` não estiver funcionando, pode ser um problema no formato do valor passado via query, ou no tipo do campo (data).
 
 ---
 
-## Resumo rápido dos pontos para focar 🔍
+## 💡 Dicas Extras para Você Melhorar Ainda Mais
 
-- Corrigir o endpoint `GET /casos/:caso_id/agente` para buscar o agente no banco, não só validar o ID.
-- Ajustar o endpoint `GET /agentes/:id/casos` para garantir que o agente existe antes de buscar os casos.
-- Revisar o uso do `return` nas promises para evitar respostas incompletas.
-- Padronizar mensagens de erro customizadas para IDs inválidos e casos não encontrados.
-- Verificar a passagem correta do parâmetro `sort` e validar os campos aceitos para ordenação.
-- Corrigir pequenos detalhes como nomes de campos em mensagens de erro (ex: "query" ao invés de "querry").
+- **Consistência nos Tipos de Dados:** Evite misturar `BigInt` e `Number` para IDs. Prefira `Number` para IDs inteiros autoincrementados no PostgreSQL.
+
+- **Validação Rigorosa dos Parâmetros:** Sempre valide os parâmetros de rota antes de executar consultas no banco, para evitar chamadas desnecessárias e garantir respostas adequadas.
+
+- **Tratamento Correto de Erros:** Pequenos detalhes como usar `===` em vez de `=` fazem diferença para o fluxo correto de tratamento de erros.
+
+- **Testes Manuais:** Faça testes manuais usando ferramentas como Postman ou Insomnia para verificar se os endpoints retornam os status e dados esperados, especialmente para casos de erro.
 
 ---
 
-Gabriel, você está no caminho certo e com um excelente domínio das tecnologias! 🚀 Continue focando nesses detalhes para destravar todos os bônus e deixar sua API ainda mais profissional e completa. Estou aqui torcendo pelo seu sucesso! Qualquer dúvida, só chamar! 🤝👨‍💻
+## 📚 Recursos para Aprofundar seu Conhecimento
 
-Um abraço e bons códigos! ✨👊
+- Para entender melhor a configuração do banco com Docker e Knex, recomendo este vídeo:  
+  http://googleusercontent.com/youtube.com/docker-postgresql-node
+
+- Para dominar migrations e seeds no Knex, leia a documentação oficial:  
+  https://knexjs.org/guide/migrations.html  
+  http://googleusercontent.com/youtube.com/knex-seeds
+
+- Para aprender mais sobre o Query Builder do Knex e como construir queries complexas:  
+  https://knexjs.org/guide/query-builder.html
+
+- Sobre validação e tratamento de erros HTTP (400 e 404):  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
+
+- Para entender melhor arquitetura MVC e organização de projetos Node.js:  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+
+---
+
+## 📝 Resumo dos Principais Pontos para Focar
+
+- [ ] Ajustar a função `getCaso` para validar o ID antes de consultar o banco e retornar 404 para IDs inválidos.
+
+- [ ] Substituir o uso de `BigInt` por `Number` para IDs, garantindo consistência com o tipo `increments()` do banco.
+
+- [ ] Corrigir o erro de atribuição no tratamento de erro de foreign key (`if(err.code = "23503")` para `===`).
+
+- [ ] Revisar e testar os filtros e ordenações, especialmente para datas e relacionamentos, garantindo que os tipos e nomes estejam corretos.
+
+- [ ] Validar parâmetros de rota e query params rigorosamente para evitar chamadas inválidas ao banco.
+
+---
+
+Gabriel, seu projeto está muito bem encaminhado e você já tem uma base sólida! Com esses ajustes finos, sua API ficará ainda mais robusta e alinhada com as melhores práticas. Continue explorando e aprimorando seu código, porque o caminho é esse! 🚀💪
+
+Se precisar de ajuda para entender algum ponto específico, estarei por aqui para te dar uma força! 😉
+
+Abraços e sucesso!  
+Seu Code Buddy 👨‍💻✨
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
