@@ -1,27 +1,33 @@
-const { success } = require("zod");
 const agentesRepository = require("../repositories/agentesRepository");
 const casosRepository = require("../repositories/casosRepository");
-const tratadorErro = require("../utils/errorHandler");
+const error404Body = {
+    status: 404,
+    message: "Agente inexistente",
+    errors: [
+        {id: "Não existe agente com esse id"}
+    ]
+}
 
 function toDateType(stringData){
     let arrayData = stringData.split('-');
     return new Date(arrayData[0], parseInt(arrayData[1])-1, arrayData[2])
 }
 
-function toBigInt(valor){
+function toBigInt(valor, res){
     try{
         return BigInt(valor);
     }catch(err){
-        return valor;
+        return false;
     }
 }
 
 function validarRepository(validar, res, statusCode){
     let resultado = null;
-    if(validar){
-        if(validar.success === false){
-            return res.status(404).json(validar)
-        }
+    if(validar === false){
+        return res.status(500).send();
+    } else if(validar === null){
+        return res.status(404).json(error404Body);
+    } else {
         if(Array.isArray(validar)){
             validar.forEach((item)=>{
                 item.dataDeIncorporacao = item.dataDeIncorporacao.toLocaleDateString('en-CA');
@@ -29,14 +35,9 @@ function validarRepository(validar, res, statusCode){
             resultado = validar;
         } else {
             validar.dataDeIncorporacao = validar.dataDeIncorporacao.toLocaleDateString('en-CA')
-            resultado = {
-                success: true,
-                ...validar
-            }
+            resultado = validar;
         }
         return res.status(statusCode).json(resultado);
-    }else {
-        return res.status(500).send()
     }
 }
 
@@ -62,108 +63,97 @@ async function getAllAgentes(req, res) {
         filtro.dataDeIncorporacao = dataDeIncorporacao;
     if(cargo)
         filtro.cargo = cargo;
-
-    return agentesRepository.read(filtro, ordenar, direcao).then((agentes) => validarRepository(agentes, res, 200));
+    let agentes = await agentesRepository.read(filtro, ordenar, direcao);
+    
+    return validarRepository(agentes, res, 200);
 }
 
 async function getAgente(req, res){
     let idAgente = toBigInt(req.params.id);
 
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, idAgente).then((resultado) => validarRepository(resultado, res, 200));
-
-
+    if(!idAgente){
+        return res.status(404).json(error404Body)
+    } else {
+        let resultado = await agentesRepository.findId(idAgente);
+        
+        return validarRepository(resultado, res, 200);
+    }
 }
 
 async function postAgente(req, res){
-
     corpoAgente = req.body;
-    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseAgente.strict(), corpoAgente);
-    if(!resultadoParametros.success){
-        return res.status(400).json(resultadoParametros)
-    } else {
-        corpoAgente.dataDeIncorporacao = toDateType(corpoAgente.dataDeIncorporacao)
-        
-        return agentesRepository.create(corpoAgente).then((resultado)=>validarRepository(resultado, res, 201));
-    }
 
+    corpoAgente.dataDeIncorporacao = toDateType(corpoAgente.dataDeIncorporacao)
+    
+    let resultado = await agentesRepository.create(corpoAgente);
+    return validarRepository(resultado, res, 201);
 }
 
-function putAgente(req, res){
+async function putAgente(req, res){
     let corpoAgente = req.body;
     let idAgente = toBigInt(req.params.id);
-    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseAgente.strict(), corpoAgente);
-    if(!resultadoParametros.success){
-        return res.status(400).json(resultadoParametros)
+    if(!idAgente){
+        return res.status(404).json(error404Body)
+    } else {
+        corpoAgente.dataDeIncorporacao = toDateType(corpoAgente.dataDeIncorporacao);
+    
+        let resultado = await agentesRepository.update(idAgente, corpoAgente);
+        return validarRepository(resultado, res, 200);
     }
-
-    corpoAgente.dataDeIncorporacao = toDateType(corpoAgente.dataDeIncorporacao);
-
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, idAgente).then( (agenteResultado) => {
-        if(!agenteResultado.success){
-            return res.status(404).json(agenteResultado)
-        }else {
-            return agentesRepository.update(idAgente, corpoAgente).then((resultado)=>validarRepository(resultado, res, 200));
-        }
-    });
 }
 
 async function patchAgente(req, res){
     let corpoAgente = req.body;
     let idAgente = toBigInt(req.params.id);
-    
-    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseAgente.partial().strict(), corpoAgente);
-    if(!resultadoParametros.success){
-        return res.status(400).json(resultadoParametros)
+    if(!idAgente){
+        return res.status(404).json(error404Body)
     } else {
         if(corpoAgente.dataDeIncorporacao)
             corpoAgente.dataDeIncorporacao = toDateType(corpoAgente.dataDeIncorporacao);
     
-        return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, idAgente).then((agenteResultado) => {
-            if(!agenteResultado.success){
-                return res.status(404).json(agenteResultado)
-            } else {
-                return agentesRepository.update(idAgente, corpoAgente).then((resultado)=>validarRepository(resultado, res, 200))
-            }
-        });
+        let resultado = await agentesRepository.update(idAgente, corpoAgente);
+    
+        return validarRepository(resultado, res, 200);
     }
 }
 
 async function deleteAgente(req, res){
     let agenteId = toBigInt(req.params.id);
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, agenteId).then((agenteResultado) => {
-        if(!agenteResultado.success){
-            return res.status(404).json(agenteResultado)
+    if(!agenteId){
+        return res.status(404).json(error404Body);
+    } else {
+        let resultado = await agentesRepository.remove(agenteId)
+        if(resultado == 0){
+            return res.status(404).json(error404Body);
+        } else if(resultado === false){
+            return res.status(500).send()
         } else {
-            agentesRepository.remove(agenteId).then((resultado)=>{
-                if(resultado){
-                    return res.status(204).send();
-                } else {
-                    return res.status(500).send()
-                }
-            });     
+            return res.status(204).send();
         }
-    });
+    }
 }
 
 async function getCasosAgente(req, res) {
     let agenteId = toBigInt(req.params.id);
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, agenteId).then((agenteResultado) => {
-        if(!agenteResultado.success){
-            return res.status(404).json(agenteResultado)
+
+    if(!agenteId){
+        return res.status(404).json(error404Body);
+    }
+
+    let agenteResultado = await agentesRepository.findId(agenteId)
+    if(agenteResultado === null){
+        return res.status(404).json(error404Body);
+    } else if(agenteResultado === false){
+        return res.status(500).send();
+    } else {
+        let resultado = await casosRepository.read({agente_id: agenteId});
+        if(resultado === false){
+            return res.status(500).send()
         } else {
-            return casosRepository.read({agente_id: agenteId}).then((resultado) => {
-                if(resultado){
-                    return res.status(200).json(resultado)
-                }else{
-                    return res.status(500).send()
-                }
-
-            })
+            return res.status(200).json(resultado)
         }
-    });
+    }
 }
-
-
 
 module.exports = {
    getAllAgentes,

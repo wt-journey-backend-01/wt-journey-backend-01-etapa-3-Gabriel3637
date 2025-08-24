@@ -25,18 +25,25 @@ async function read(filtro = {}, ordenacao = null, direcao = null, query = null)
         
         const isSingular = Object.keys(filtro).length == 1 && 'id' in filtro && result.length == 1;
 
-        if(!result){
-            return false;
-        }
-
         if (isSingular){
             return result[0];
         }
-
-
         return result;
     } catch (err) {
         console.log(err);
+        return false;
+    }
+}
+
+async function findId(id) {
+    try{
+        let resp = await db("casos").where({id: id});
+        if(resp.length == 0){
+            return null;
+        } else {
+            return resp[0];
+        }
+    }catch(err){
         return false;
     }
 }
@@ -48,7 +55,11 @@ async function create(caso){
         return result[0];
     }catch(err){
         console.log(err);
-        return false;
+        if(err.code = "23503"){
+            return {code: err.code}
+        }else {
+            return false;
+        }
     } 
 }
 
@@ -65,14 +76,29 @@ async function remove(id){
 async function update(id, objUpdate) {
     try {
         const result = await db("casos").where({id: id}).update(objUpdate, ["*"])
-        return result[0]
+        if(result.length == 0){
+            return null;
+        } else {
+            return result[0]
+        }
     } catch (err) {
         console.log(err);
-        return false;
+        if(err.code = "23503"){
+            return {code: err.code}
+        }else {
+            return false;
+        }
     }
 }
 
+//create({titulo: "teste", descricao: "teste", status:"aberto", agente_id:null}).then((result)=> console.log(result))
+
+//update(22, {titulo: "teste1", descricao: "teste", status:"aberto", agente_id:2}).then((result) => console.log(result));
+
+
+
 module.exports = {
+    findId,
     read,
     update,
     remove,

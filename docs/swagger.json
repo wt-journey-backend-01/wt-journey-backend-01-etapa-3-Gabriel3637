@@ -812,49 +812,47 @@
             "AgenteErroParametros": {
                 "type": "object",
                 "properties": {
-                    "success": {
-                        "type": "boolean",
-                        "example": false
+                    "status": {
+                        "type": "integer",
+                        "example": 400
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Parâmetros inválidos"
                     },
                     "errors": {
-                        "type": "array",
-                        "example": [
-                            {
-                                "path": [
-                                    "nome"
-                                ],
-                                "message":"O campo 'nome' não pode ser vazio"
-                            }
-                        ]
+                        "type": "object",
+                        "example": {
+                            "nome": "A requisição deve possuir o campo 'nome'",
+                            "dataDeIncorporacao": "A requisição deve possuir o campo 'dataDeIncorporacao'",
+                            "cargo": "A requisição deve possuir o campo 'cargo'"
+                        }
                     }
                 }
             },
             "AgenteInexistenteErro": {
                 "type": "object",
                 "properties":{
-                    "success": {
-                        "type": "boolean",
-                        "example": false
+                    "status": {
+                        "type": "integer",
+                        "example": 404
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Agente inexistente"
                     },
                     "errors": {
-                        "type": "array",
-                        "example": [
-                            {
-                                "path": [],
-                                "message": "Não existe agente com esse id"
-                            }
-                        ]
+                        "type": "object",
+                        "example": {
+                            "id": "Não existe agente com esse id"
+                        }
                     }
                 }
             },
             "AgenteSucesso": {
                 "type": "object",
-                "required": ["success", "id", "nome", "dataDeIncorporacao", "cargo"],
+                "required": ["id", "nome", "dataDeIncorporacao", "cargo"],
                 "properties":{
-                    "success": {
-                        "type": "boolean",
-                        "example": true
-                    },
                     "id":{
                         "type": "string",
                         "format": "uuid"
@@ -912,64 +910,67 @@
             "CasoErroParametros": {
                 "type": "object",
                 "properties": {
-                    "success": {
-                        "type": "boolean",
-                        "example": false
+                    "status": {
+                        "type": "integer",
+                        "example": 400
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Parâmetros inválidos"
                     },
                     "errors": {
-                        "type": "array",
-                        "example": [
-                            {
-                                "path": [
-                                    "titulo"
-                                ],
-                                "message":"O campo 'titulo' não pode ser vazio"
-                            }
-                        ]
+                        "type": "object",
+                        "example": {
+                            "titulo": "A requisição deve possuir o campo 'titulo'",
+                            "descricao": "A requisição deve possuir o campo 'descricao'",
+                            "status": "A requisição deve possuir o campo 'status'",
+                            "agente_id": "A requisição deve possuir o campo 'agente_id'"
+                        }
                     }
-
                 }
             },
             "CasoInexistenteErro": {
                 "type": "object",
                 "properties":{
-                    "success": {
-                        "type": "boolean",
-                        "example": false
+                    "status": {
+                        "type": "integer",
+                        "example": 404
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Caso inexistente"
                     },
                     "errors": {
-                        "type": "array",
-                        "example": [
-                            {
-                                "path": [],
-                                "message": "Não existe caso com esse id"
-                            }
-                        ]
+                        "type": "object",
+                        "example": {
+                            "id": "Não existe caso com esse id"
+                        }
                     }
                 }
             },
             "CasoAgenteResponsavelErro": {
                 "type": "object",
                 "properties":{
-                    "success": false,
-                    "errors": [
-                        {
-                            "path": [
-                                "agente_id"
-                            ],
-                            "message": "O caso não possui agente reponsável"
+                    "status": {
+                        "type": "integer",
+                        "example": 404
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Agente inexistente"
+                    },
+                    "errors": {
+                        "type": "object",
+                        "example": {
+                            "id": "Não existe agente com esse id"
                         }
-                    ]
+                    }
                 }
             },
             "CasoSucesso": {
                 "type": "object",
-                "required": ["success", "id", "titulo", "descricao", "agente_id"],
+                "required": ["id", "titulo", "descricao", "agente_id"],
                 "properties":{
-                    "success": {
-                        "type": "boolean",
-                        "example": true
-                    },
                     "id":{
                         "type": "string",
                         "format": "uuid"
@@ -988,20 +989,20 @@
             },
             "CasoBuscarErro": {
                 "type": "object",
-                "required": ["success", "errors"],
                 "properties": {
-                    "success": {
-                        "type": "boolean",
-                        "example": false  
+                    "status": {
+                        "type": "integer",
+                        "example": 400
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Parâmetro de pesquisa não fornecido"
                     },
                     "errors": {
-                        "type": "array",
-                        "example": [
-                            {
-                                "path": ["querry"],
-                                "message": "O parâmetro 'q' é obrigatório para pesquisa"
-                            }
-                        ]
+                        "type": "object",
+                        "example": {
+                            "querry": "O parâmetro 'q' é obrigatório para pesquisa"
+                        }
                     }
                 }
             }

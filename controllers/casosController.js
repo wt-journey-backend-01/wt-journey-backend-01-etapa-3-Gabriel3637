@@ -1,33 +1,43 @@
 const casosRepository = require("../repositories/casosRepository");
 const agentesRepository = require("../repositories/agentesRepository");
-const tratadorErro = require("../utils/errorHandler");
-const { success } = require("zod");
+
+const error404Body = {
+    status: 404,
+    message: "Caso inexistente",
+    errors: [
+        {id: "Não existe caso com esse id"}
+    ]
+}
 
 function toBigInt(valor){
     try{
-        return BigInt(valor);
+        if(valor === null || valor === undefined){
+            return null;
+        }else {
+            return BigInt(valor);
+        }
     }catch(err){
-        return valor;
+        return false;
     }
 }
 
 function validarRepository(validar, res, statusCode){
     let resultado = null;
-    if(validar){
-        if(validar.success === false){
-            return res.status(404).json(validar)
-        }
-        if(Array.isArray(validar)){
-            resultado = validar
-        } else {
-            resultado = {
-                success: true,
-                ...validar
-            }
-        }
-        return res.status(statusCode).json(resultado);
-    }else {
+    if(validar === false){
         return res.status(500).send()
+    } else if(validar === null){
+        return res.status(404).json(error404Body);
+    }else if(validar.code == "23503"){
+        return res.status(404).json({
+            status: 404,
+            message: "Agente inexistente",
+            errors: [
+                {id: "Não existe agente com esse id"}
+            ]
+        })
+    }else {
+        resultado = validar;
+        return res.status(statusCode).json(resultado);   
     }
 }
 
@@ -57,17 +67,15 @@ async function getAllCasos(req, res) {
     if(agente_id)
         filtro.agente_id = agente_id;
 
-    return casosRepository.read(filtro, ordenar, direcao).then((resultado)=> validarRepository(resultado, res, 200)); 
+    let resultado = await casosRepository.read(filtro, ordenar, direcao);
+    return validarRepository(resultado, res, 200);
 }
 
 async function getCaso(req, res){
     let idCaso = toBigInt(req.params.id);
 
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultado)=> {
-        validarRepository(resultado, res, 200)
-    });
-
-
+    let resultado = await casosRepository.findId(idCaso);
+    return validarRepository(resultado, res, 200);
 }
 
 async function postCaso(req, res){
@@ -75,153 +83,99 @@ async function postCaso(req, res){
 
     corpoCaso.agente_id = toBigInt(corpoCaso.agente_id);
 
-    let resultado = tratadorErro.validarScheme(tratadorErro.EsquemaBaseCaso.strict(), corpoCaso);
-    if(!resultado.success){
-        return res.status(400).json(resultado)
-    } else {
-        if(corpoCaso.agente_id){
-            return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, corpoCaso.agente_id).then((agenteResultado) => {
-                if(!agenteResultado.success){
-                    return res.status(404).json(agenteResultado)
-                } else {
-                    return casosRepository.create(corpoCaso).then((resultado)=> validarRepository(resultado, res, 201));
-                }
-            });
-        }else{
-            return casosRepository.create(corpoCaso).then((resultado)=> validarRepository(resultado, res, 201));
-        }
-    }
+    let resultado = await casosRepository.create(corpoCaso)
+    return validarRepository(resultado, res, 201);
 }
 
-function putCaso(req, res){
+async function putCaso(req, res){
     let corpoCaso = req.body;
     let idCaso = toBigInt(req.params.id);
-
-    corpoCaso.agente_id = toBigInt(corpoCaso.agente_id);
-
-    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseCaso.strict(), corpoCaso);
-    if(!resultadoParametros.success){
-        return res.status(400).json(resultadoParametros)
+    if(idCaso === false){
+        return res.status(404).json(error404Body)
     } else {
-        return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((casoResultado)=>{
-            if(!casoResultado.success){
-                return res.status(404).json(casoResultado)
-            } else {
-                if(corpoCaso.agente_id){
-                    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, corpoCaso.agente_id).then((agenteResultado)=>{
-                        if(!agenteResultado.success){
-                            return res.status(404).json(agenteResultado)
-                        } else {
-                            return casosRepository.update(idCaso, corpoCaso).then((resultado) => validarRepository(resultado, res, 200));
-                        }
-                    });
-                }else{
-                    return casosRepository.update(idCaso, corpoCaso).then((resultado) => validarRepository(resultado, res, 200)); 
-                }
-            }
-    
-        });
-    }
-    
+        corpoCaso.agente_id = toBigInt(corpoCaso.agente_id);
+        
+        let resultado = await casosRepository.update(idCaso, corpoCaso);
+        return validarRepository(resultado, res, 200); 
+    } 
 }
 
 async function patchCaso(req, res){
     let corpoCaso = req.body;
     let idCaso = toBigInt(req.params.id);
- 
-    corpoCaso.agente_id = toBigInt(corpoCaso.agente_id);
-
-    let resultadoParametros = tratadorErro.validarScheme(tratadorErro.EsquemaBaseCaso.partial(), corpoCaso);
-    if(!resultadoParametros.success){
-        return res.status(400).json(resultadoParametros)
+    if(idCaso === false){
+        return res.status(404).json(error404Body)
     } else {
-        return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((casoResultado) => {
-            if(!casoResultado.success){
-                return res.status(404).json(casoResultado)
-            }else {
-                if(corpoCaso.agente_id){
-                    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, corpoCaso.agente_id).then((agenteResultado) => {
-                        if(!agenteResultado.success){
-                            return res.status(404).json(resultado)
-                        }else {
-                            return casosRepository.update(idCaso, corpoCaso).then((resultado) => validarRepository(resultado, res, 200))
-                        }
-                    });
-                }else{
-                    return casosRepository.update(idCaso, corpoCaso).then((resultado) => validarRepository(resultado, res, 200))
-                }
-            }
-        });
+        if(corpoCaso.agente_id !== undefined)
+            corpoCaso.agente_id = toBigInt(corpoCaso.agente_id);
+
+        let resultado = await casosRepository.update(idCaso, corpoCaso);
+        return validarRepository(resultado, res, 200);
     }
 }
 
 async function deleteCaso(req, res){
     let casoId = toBigInt(req.params.id);
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, casoId).then((casoResultado)=>{
-        if(!casoResultado.success){
-            return res.status(404).json(casoResultado)
+    let idCaso = toBigInt(req.params.id);
+    if(idCaso === false){
+        return res.status(404).json(error404Body);
+    } else {
+        let resultado = await casosRepository.remove(casoId);
+        if(resultado == 0){
+            return res.status(404).json(error404Body)
+        }else if(resultado === false){
+            return res.status(500).send()
         }else{
-            return casosRepository.remove(casoId).then((resultado)=> {
-                if(resultado){
-                    return res.status(204).send();
-                } else {
-                    return res.status(500).send()
-                }
-            });
+            return res.status(204).send();
         }
-    });
+    };
 }
 
 async function getAgenteCaso(req, res){
     let idCaso = toBigInt(req.params.caso_id);
 
-    return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdCaso, idCaso).then((resultadoCaso) => {
-        if(!resultadoCaso.success){
-            return res.status(404).json(resultadoCaso)
+    if(idCaso === false){
+        return res.status(404).json(error404Body);
+    } else {
+        let casoResultado = await casosRepository.findId(idCaso);
+        if(casoResultado === null){
+            return res.status(404).json(error404Body);
+        } else if(casoResultado === false){
+            return res.status(500).send();
+        } else if(!casoResultado.agente_id){
+            console.log(casoResultado);
+            return res.status(404).json({
+                status: 404,
+                message: "Agente responsável inexistente",
+                errors: [
+                    {agente_id: "O caso não possui agente reponsável"}
+                ]
+            })
         } else {
-            if(!resultadoCaso.agente_id){
-                return res.status(404).json({
-                    success: false,
-                    errors: [{
-                        path: ["agente_id"],
-                        message: "O caso não possui agente reponsável"
-                    }]
-                })
+            let resultado = await agentesRepository.findId(casoResultado.agente_id);
+            if(resultado === false){
+                return res.status(500).send();
             }else{
-                return tratadorErro.validarSchemeAsync(tratadorErro.EsquemaIdAgente, toBigInt(resultadoCaso.agente_id)).then((resultado)=>{
-                    if(resultado){
-                        if(resultado.success === false){
-                            return res.status(404).json(resultado)
-                        } else {
-                            resultado.dataDeIncorporacao = resultado.dataDeIncorporacao.toLocaleDateString('en-CA')
-                            resultado = {
-                                success: true,
-                                ...resultado
-                            }
-                        }
-                        return res.status(200).json(resultado);
-                    }else {
-                        return res.status(500).send()
-                    }
-                });
-            };
+                resultado.dataDeIncorporacao = resultado.dataDeIncorporacao.toLocaleDateString('en-CA');
+                return res.status(200).json(resultado);
+            }
         }
-    });
+    }
 }
-
 
 async function pesquisarCasos(req, res){
     const pesquisa = req.query.q;
     if (!pesquisa){
         return res.status(400).json({
-            success: false,
+            status: 400,
+            message: "Querry inexistente",
             errors: [{
-                path: ["querry"],
-                message: "O parâmetro 'q' é obrigatório para pesquisa"
+                querry: "O parâmetro 'q' é obrigatório para pesquisa"
             }]
         })
     } else {
-        return casosRepository.read({}, null, null, pesquisa).then((resultado) => validarRepository(resultado, res, 200));
+        let resultado = await casosRepository.read({}, null, null, pesquisa);
+        return validarRepository(resultado, res, 200);
     }
 
 }

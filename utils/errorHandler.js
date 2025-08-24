@@ -1,9 +1,6 @@
-const casosRepository = require("../repositories/casosRepository");
-const agentesRepository = require("../repositories/agentesRepository")
-
 const {z} = require("zod");
 
-const EsquemaBaseCaso = z.object({
+const schemeBaseCaso = z.object({
     id: z.undefined({
         error: "Campo 'id' não pode ser alterado"
     }),
@@ -16,12 +13,12 @@ const EsquemaBaseCaso = z.object({
     status: z.intersection(z.string({
         error: (campo) => campo.input === undefined ?  "A requisição deve possuir o campo 'status'" : "A requisição deve possuir o campo 'status' válido (string)"
     }), z.enum(["aberto", "solucionado"], {error: "O campo 'status' pode ser somente 'aberto' ou 'solucionado'"})),
-    agente_id: z.nullable(z.bigint({
-        error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'agente_id'" : "A requisição deve possuir o campo 'agente_id' válido (bigint ou null)" 
+    agente_id: z.nullable(z.int({
+        error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'agente_id'" : "A requisição deve possuir o campo 'agente_id' válido (inteiro ou null)" 
     }))
 });
 
-const EsquemaBaseAgente = z.object({
+const schemeBaseAgente = z.object({
     id: z.undefined({
         error: "Campo 'id' não pode ser alterado"
     }),
@@ -43,38 +40,9 @@ const EsquemaBaseAgente = z.object({
     cargo: z.string({
         error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'cargo'" : "A requisição deve possuir o campo 'cargo' válido (string)"
     }).min(1, "O campo 'cargo' não pode ser vazio")
-})
+}, {error: "Atributo desconhecido"})
 
-const EsquemaIdCaso = z.bigint({error: "Id deve ser de um tipo válido (bigint)"}).transform(async (val, ctx)=>{
-    return casosRepository.read({id: val}).then(casoEncontrado => {
-        if(casoEncontrado && !Array.isArray(casoEncontrado)){
-            return casoEncontrado;
-        } else if(!casoEncontrado || casoEncontrado.length == 0){
-            ctx.issues.push({
-            code: "custom",
-            message: "Não existe caso com esse id",
-            input: val,
-            });
-            return z.NEVER;
-        }
-    });
-    
-});
-
-const EsquemaIdAgente = z.bigint({error: "Id deve ser de um tipo válido (bigint)"}).transform( async (val, ctx)=>{
-    return agentesRepository.read({id: val}).then(agenteEncontrado => {
-        if(agenteEncontrado && !Array.isArray(agenteEncontrado)){
-            return agenteEncontrado;
-        } else if(!agenteEncontrado || agenteEncontrado.length == 0){
-            ctx.issues.push({
-            code: "custom",
-            message: "Não existe agente com esse id",
-            input: val,
-            });
-            return z.NEVER;
-        }
-    });
-});
+const schemeBaseId = z.intersection(z.string({error: "O id deve ser de um tipo válido (string)"}), z.uuidv4({error: "O id deve possuir formato valido (uuid)"}));
 
 function validarScheme(scheme, itemValidar){
     let resultado = scheme.safeParse(itemValidar);
@@ -117,10 +85,9 @@ async function validarSchemeAsync(scheme, itemValidar){
 
 
 module.exports = {
-    EsquemaBaseAgente,
-    EsquemaBaseCaso,
+    schemeBaseAgente,
+    schemeBaseCaso,
     validarScheme,
     validarSchemeAsync,
-    EsquemaIdCaso,
-    EsquemaIdAgente
+    schemeBaseId,
 }

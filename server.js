@@ -9,7 +9,7 @@ app.use(express.json());
 app.use("/casos", casosRouter);
 app.use("/agentes", agentesRouter);
 
-app.use("/api-docs", swaggerUi);
+app.use("/docs", swaggerUi);
 
 
 
