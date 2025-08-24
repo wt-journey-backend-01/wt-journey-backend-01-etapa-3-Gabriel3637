@@ -73,9 +73,12 @@ async function getAllCasos(req, res) {
 
 async function getCaso(req, res){
     let idCaso = toBigInt(req.params.id);
-
-    let resultado = await casosRepository.findId(idCaso);
-    return validarRepository(resultado, res, 200);
+    if(idCaso === false){
+        return res.status(404).json(error404Body)
+    } else {
+        let resultado = await casosRepository.findId(idCaso);
+        return validarRepository(resultado, res, 200);
+    }
 }
 
 async function postCaso(req, res){
