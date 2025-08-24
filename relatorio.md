@@ -1,186 +1,100 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 9 créditos restantes para usar o sistema de feedback AI.
+Você tem 8 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para Gabriel3637:
 
-Nota final: **97.4/100**
+Nota final: **100.0/100**
 
-# Feedback para Gabriel3637 🚓✨
+Olá, Gabriel3637! 👋🚀
 
-Olá Gabriel! Antes de mais nada, parabéns pelo esforço e pela nota incrível que você conquistou! 🎉 Você conseguiu implementar muito bem a base da API REST com Express e PostgreSQL, utilizando Knex.js, e ainda foi além ao entregar funcionalidades bônus que agregam bastante valor ao projeto. Isso mostra seu comprometimento e dedicação — continue assim! 👏
-
----
-
-## 🎯 Pontos Fortes que Merecem Destaque
-
-- Você estruturou seu projeto de forma muito organizada, com pastas claras para `controllers`, `repositories`, `routes`, `db` (com `migrations` e `seeds`), e `utils`. Isso facilita a manutenção e escalabilidade do código. Ótimo trabalho! 🗂️
-
-- A integração com o banco de dados via Knex está bem feita, com configuração correta no `knexfile.js` e no arquivo `db/db.js`. Você usou o ambiente correto (`NODE_ENV`) para carregar as configurações, o que é uma boa prática.
-
-- As migrations para criação das tabelas `agentes` e `casos` estão implementadas corretamente, com os tipos e relações adequadas, incluindo o uso do `onDelete('SET NULL')` para manter integridade referencial.
-
-- Os seeds para popular as tabelas também estão muito bem elaborados, garantindo dados iniciais variados para testes.
-
-- As rotas e controllers estão organizados, e você implementou validações usando middleware, além de retornar status HTTP coerentes para cada situação.
-
-- Parabéns por implementar os requisitos bônus que passaram, como a filtragem de casos por status e agente, e as mensagens de erro customizadas para agentes inválidos! Isso mostra que você foi além do básico.
+Primeiramente, parabéns pelo seu empenho e pela entrega impecável da sua API para o Departamento de Polícia! 🎉 Você conseguiu implementar com sucesso todos os requisitos básicos, garantindo que agentes e casos sejam criados, lidos, atualizados e deletados corretamente com persistência no PostgreSQL usando Knex.js. Além disso, mandou muito bem ao entregar funcionalidades bônus, como a filtragem por status e agente, e a personalização das mensagens de erro para agentes inválidos. Isso mostra que você foi além do esperado, e isso é sensacional! 👏👏
 
 ---
 
-## 🔎 Análise Profunda: Onde o Código Pode Evoluir
+## Vamos conversar um pouco sobre o que eu observei no seu código e onde podemos melhorar para destravar os últimos desafios? 🕵️‍♂️🔍
 
-### 1. Problema com o Retorno 404 ao Buscar Caso por ID Inválido
+### 1. Estrutura do Projeto - Você está no caminho certo! 🗂️
 
-Você mencionou que o endpoint para buscar um caso por ID inválido não está retornando o status 404 como esperado. Ao analisar o seu código, percebi alguns pontos importantes:
+Sua organização de pastas e arquivos está muito bem alinhada com o que se espera em um projeto Node.js com Knex e Express:
 
-No arquivo `controllers/casosController.js`, a função `getCaso` é assim:
+- `db/` com `migrations`, `seeds` e `db.js` para a configuração do banco
+- `routes/`, `controllers/`, `repositories/` e `utils/` separados e claros
+- Arquivos de configuração como `knexfile.js` e `docker-compose.yml` no lugar correto
 
-```js
-async function getCaso(req, res){
-    let idCaso = toBigInt(req.params.id);
+Isso facilita muito a manutenção e escalabilidade do projeto, parabéns! 👏
 
-    let resultado = await casosRepository.findId(idCaso);
-    return validarRepository(resultado, res, 200);
-}
-```
+---
 
-O que acontece aqui é que você está convertendo o ID para `BigInt` com a função `toBigInt`. Porém, se o parâmetro `id` for inválido (por exemplo, uma string que não pode ser convertida para `BigInt`), a função `toBigInt` retorna `false`. Mas você não está tratando esse caso antes de chamar o repositório.
+### 2. Sobre os testes bônus que não passaram — Vamos juntos entender o que pode estar acontecendo! 🤔
 
-Além disso, no repositório `casosRepository.js`, a função `findId` faz uma consulta ao banco e retorna:
+Você implementou funcionalidades extras muito legais, mas algumas delas ainda não funcionam perfeitamente. Vou destacar os pontos que eu identifiquei no seu código que podem estar impactando essas funcionalidades:
 
-- `null` se não encontrar o registro
-- `false` se ocorrer um erro
+---
 
-Na função `validarRepository` do controller, você trata os casos de `null` e `false`:
+### 3. Endpoint para buscar o agente responsável pelo caso (`GET /casos/:caso_id/agente`)
 
-```js
-function validarRepository(validar, res, statusCode){
-    if(validar === false){
-        return res.status(500).send()
-    } else if(validar === null){
-        return res.status(404).json(error404Body);
-    }
-    // ...
-}
-```
+O requisito bônus pede que você retorne o agente responsável por um caso específico.
 
-Porém, no `getCaso`, você não está verificando se `idCaso` é `false` antes de continuar, o que pode causar uma consulta inválida ao banco e não retornar o 404 esperado.
-
-**Como corrigir?**
-
-Antes de chamar o repositório, valide o ID:
+No seu controller `casosController.js`, a função `getAgenteCaso` está assim:
 
 ```js
-async function getCaso(req, res){
-    let idCaso = toBigInt(req.params.id);
+async function getAgenteCaso(req, res){
+    let idCaso = toBigInt(req.params.caso_id);
 
     if(idCaso === false){
-        // ID inválido, retorna 404
         return res.status(404).json(error404Body);
-    }
-
-    let resultado = await casosRepository.findId(idCaso);
-    return validarRepository(resultado, res, 200);
-}
-```
-
-Essa pequena alteração garante que IDs inválidos sejam tratados corretamente, evitando consultas desnecessárias e retornando o status correto.
-
----
-
-### 2. Uso de `BigInt` para IDs e Consistência com o Banco de Dados
-
-Notei que você está usando `BigInt` para manipular os IDs, por exemplo:
-
-```js
-function toBigInt(valor){
-    try{
-        if(valor === null || valor === undefined){
-            return null;
-        }else {
-            return BigInt(valor);
+    } else {
+        let casoResultado = await casosRepository.findId(idCaso);
+        if(casoResultado === null){
+            return res.status(404).json(error404Body);
+        } else if(casoResultado === false){
+            return res.status(500).send();
+        } else if(!casoResultado.agente_id){
+            console.log(casoResultado);
+            return res.status(404).json({
+                status: 404,
+                message: "Agente responsável inexistente",
+                errors: [
+                    {agente_id: "O caso não possui agente reponsável"}
+                ]
+            })
+        } else {
+            let resultado = await agentesRepository.findId(casoResultado.agente_id);
+            if(resultado === false){
+                return res.status(500).send();
+            }else{
+                resultado.dataDeIncorporacao = resultado.dataDeIncorporacao.toLocaleDateString('en-CA');
+                return res.status(200).json(resultado);
+            }
         }
-    }catch(err){
-        return false;
     }
 }
 ```
 
-E nas migrations, suas tabelas definem a coluna `id` como `increments()`, que cria um inteiro serial (normalmente `integer`), não um bigint. Isso pode causar discrepância entre o tipo esperado no código e no banco.
+**Análise:**
 
-**Por que isso importa?**
-
-- Se o banco está usando `integer` para IDs, mas você está usando `BigInt` no código, pode haver problemas de comparação ou erros sutis.
-
-- Além disso, IDs de agentes e casos são gerados pelo banco e usados como números inteiros padrão.
-
-**Recomendação:**
-
-Considere usar `Number` no código para IDs, e não `BigInt`. Isso simplifica o tratamento e evita conversões desnecessárias.
-
-Por exemplo, altere a função `toBigInt` para algo como:
+- A função parece correta na lógica, mas reparei que no seu migration de `casos` você definiu o campo `agente_id` como `integer`:
 
 ```js
-function toInt(valor){
-    const n = Number(valor);
-    if(Number.isNaN(n)) return false;
-    return n;
-}
+table.integer('agente_id').nullable().references('id').inTable('agentes').onDelete('SET NULL');
 ```
 
-E ajuste as chamadas no controller e repositório para usar `toInt` ao invés de `toBigInt`.
+- Porém, no repositório e controllers, você está usando `BigInt` para converter IDs, o que pode gerar incompatibilidade, já que o banco está usando `integer` para IDs.
+
+- Além disso, no seed, você insere `agente_id` como números inteiros (ex: `agente_id: 8`), o que é coerente com o migration.
+
+**Sugestão:**
+
+- Você pode padronizar o uso de IDs como `integer` em todo o sistema, removendo o `BigInt` para IDs, pois o banco está configurado para `integer` (autoincrement).
+
+- Isso evitará problemas de conversão e possíveis erros silenciosos que impedem o retorno correto do agente responsável.
 
 ---
 
-### 3. Tratamento de Erros de Foreign Key no Repositório de Casos
+### 4. Endpoint para buscar casos de um agente (`GET /agentes/:id/casos`)
 
-No arquivo `repositories/casosRepository.js`, você tem um tratamento especial para erro de código `23503` (violação de foreign key):
-
-```js
-async function create(caso){
-    try{
-        const result = await db('casos').insert(caso, ["*"]);
-        return result[0];
-    }catch(err){
-        console.log(err);
-        if(err.code = "23503"){
-            return {code: err.code}
-        }else {
-            return false;
-        }
-    } 
-}
-```
-
-Aqui há um pequeno erro de atribuição: você usou `if(err.code = "23503")` que faz uma atribuição em vez de comparar. Isso faz com que o código sempre entre nesse bloco, o que não é o comportamento esperado.
-
-**Como corrigir?**
-
-Troque o `=` por `===` para fazer a comparação correta:
-
-```js
-if(err.code === "23503"){
-    return {code: err.code}
-}
-```
-
-Esse detalhe é fundamental para que seu código trate corretamente os erros de integridade referencial e retorne o status 404 com mensagem apropriada.
-
----
-
-### 4. Falha nos Testes Bônus de Filtragem Complexa e Busca de Relacionamentos
-
-Você implementou bem os filtros simples, mas alguns endpoints bônus que envolvem:
-
-- Filtragem por data de incorporação com ordenação crescente/decrescente
-- Busca de casos do agente (`/agentes/:id/casos`)
-- Busca do agente responsável pelo caso (`/casos/:caso_id/agente`)
-- Filtragem por palavras-chave nos casos
-
-não passaram.
-
-Ao analisar o controller `agentesController.js`, na função `getCasosAgente`:
+No controller `agentesController.js`, a função `getCasosAgente` está assim:
 
 ```js
 async function getCasosAgente(req, res) {
@@ -206,26 +120,23 @@ async function getCasosAgente(req, res) {
 }
 ```
 
-Aqui, o problema pode estar na forma como você está passando o filtro `{agente_id: agenteId}` para o repositório, considerando que `agente_id` no banco é um inteiro, mas você pode estar usando `BigInt` no código.
+**Análise:**
 
-Além disso, o método `read` do repositório `casosRepository` espera que o filtro seja um objeto com as chaves e valores exatos para a query `.where(filtro)`. Se o tipo do `agente_id` não bater com o banco, a query pode não retornar resultados.
+- Aqui o mesmo problema do uso de `BigInt` para IDs pode estar causando falha.
 
-**Recomendo:**
+- Como o banco usa `integer` para IDs, usar `BigInt` pode causar uma busca incorreta e retornar vazio.
 
-- Ajustar o tipo de `agenteId` para `Number`, conforme comentado antes.
-
-- Confirmar que o filtro está correto e que o banco tem dados correspondentes.
+- Além disso, percebi que você não está formatando as datas dos casos nem dos agentes aqui, o que pode ser um detalhe para deixar a resposta mais consistente, mas isso é secundário.
 
 ---
 
-### 5. Ordenação e Filtragem por Data de Incorporação no Agentes
+### 5. Filtragem de agentes por data de incorporação com ordenação
 
-No controller `agentesController.js`, a função `getAllAgentes` tenta implementar ordenação:
+Você tem um filtro complexo para agentes, inclusive com sort e direção. No controller `agentesController.js`, no método `getAllAgentes`:
 
 ```js
 let ordenar = req.query.sort;
-let direcao = null;
-
+// ...
 if(ordenar){
     if(ordenar[0] == '-'){
         ordenar = ordenar.slice(1)
@@ -236,67 +147,168 @@ if(ordenar){
 }
 ```
 
-Isso parece correto, mas é importante garantir que o campo `ordenar` seja exatamente o nome da coluna no banco (`dataDeIncorporacao`).
+E depois passa para o repository:
 
-Além disso, no repositório `agentesRepository.js`, a função `read` usa `.orderBy(ordenacao, direcao)`. Isso está correto, mas vale a pena garantir que o nome do campo passado seja válido.
+```js
+let agentes = await agentesRepository.read(filtro, ordenar, direcao);
+```
 
-Se o filtro por `dataDeIncorporacao` não estiver funcionando, pode ser um problema no formato do valor passado via query, ou no tipo do campo (data).
+No repository `agentesRepository.js`:
 
----
+```js
+async function read(filtro = {}, ordenacao = null, direcao = null){
+    try{
+        let result = false
+        if(ordenacao && direcao){
+            result = await db("agentes").where(filtro).orderBy(ordenacao, direcao)
+        } else {
+            result = await db("agentes").where(filtro)
+        }
+        
+        const isSingular = Object.keys(filtro).length == 1 && 'id' in filtro && result.length == 1;
 
-## 💡 Dicas Extras para Você Melhorar Ainda Mais
+        if (isSingular){
+            return result[0];
+        }
+        return result;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+```
 
-- **Consistência nos Tipos de Dados:** Evite misturar `BigInt` e `Number` para IDs. Prefira `Number` para IDs inteiros autoincrementados no PostgreSQL.
+**Análise:**
 
-- **Validação Rigorosa dos Parâmetros:** Sempre valide os parâmetros de rota antes de executar consultas no banco, para evitar chamadas desnecessárias e garantir respostas adequadas.
+- O filtro e ordenação parecem corretos, mas é importante verificar se o campo `dataDeIncorporacao` está sendo passado corretamente no filtro e se o banco está armazenando essa data no formato correto.
 
-- **Tratamento Correto de Erros:** Pequenos detalhes como usar `===` em vez de `=` fazem diferença para o fluxo correto de tratamento de erros.
-
-- **Testes Manuais:** Faça testes manuais usando ferramentas como Postman ou Insomnia para verificar se os endpoints retornam os status e dados esperados, especialmente para casos de erro.
-
----
-
-## 📚 Recursos para Aprofundar seu Conhecimento
-
-- Para entender melhor a configuração do banco com Docker e Knex, recomendo este vídeo:  
-  http://googleusercontent.com/youtube.com/docker-postgresql-node
-
-- Para dominar migrations e seeds no Knex, leia a documentação oficial:  
-  https://knexjs.org/guide/migrations.html  
-  http://googleusercontent.com/youtube.com/knex-seeds
-
-- Para aprender mais sobre o Query Builder do Knex e como construir queries complexas:  
-  https://knexjs.org/guide/query-builder.html
-
-- Sobre validação e tratamento de erros HTTP (400 e 404):  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
-
-- Para entender melhor arquitetura MVC e organização de projetos Node.js:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+- Também seria interessante garantir que a query está sendo feita com o formato correto da data, pois o filtro pode falhar se a data for passada em um formato diferente do que o banco espera.
 
 ---
 
-## 📝 Resumo dos Principais Pontos para Focar
+### 6. Tratamento de erros customizados para casos inválidos
 
-- [ ] Ajustar a função `getCaso` para validar o ID antes de consultar o banco e retornar 404 para IDs inválidos.
+No `casosRepository.js`, você tem:
 
-- [ ] Substituir o uso de `BigInt` por `Number` para IDs, garantindo consistência com o tipo `increments()` do banco.
+```js
+async function create(caso){
+    try{
+        const result = await db('casos').insert(caso, ["*"]);
 
-- [ ] Corrigir o erro de atribuição no tratamento de erro de foreign key (`if(err.code = "23503")` para `===`).
+        return result[0];
+    }catch(err){
+        console.log(err);
+        if(err.code = "23503"){
+            return {code: err.code}
+        }else {
+            return false;
+        }
+    } 
+}
+```
 
-- [ ] Revisar e testar os filtros e ordenações, especialmente para datas e relacionamentos, garantindo que os tipos e nomes estejam corretos.
+**Análise crítica:**
 
-- [ ] Validar parâmetros de rota e query params rigorosamente para evitar chamadas inválidas ao banco.
+- Aqui você usa `if(err.code = "23503")`, mas isso é uma atribuição, não uma comparação. O correto é usar `===` ou `==` para comparar valores.
+
+- Isso pode fazer com que o erro não seja tratado corretamente.
+
+**Correção sugerida:**
+
+```js
+if(err.code === "23503"){
+    return {code: err.code}
+}else {
+    return false;
+}
+```
+
+O mesmo problema está no método `update` do mesmo arquivo.
 
 ---
 
-Gabriel, seu projeto está muito bem encaminhado e você já tem uma base sólida! Com esses ajustes finos, sua API ficará ainda mais robusta e alinhada com as melhores práticas. Continue explorando e aprimorando seu código, porque o caminho é esse! 🚀💪
+### 7. Uso do `BigInt` para IDs
 
-Se precisar de ajuda para entender algum ponto específico, estarei por aqui para te dar uma força! 😉
+Você usa a função `toBigInt` para converter os IDs de parâmetros:
 
-Abraços e sucesso!  
-Seu Code Buddy 👨‍💻✨
+```js
+function toBigInt(valor){
+    try{
+        if(valor === null || valor === undefined){
+            return null;
+        }else {
+            return BigInt(valor);
+        }
+    }catch(err){
+        return false;
+    }
+}
+```
+
+E no `agentesController.js` você tem uma versão semelhante.
+
+**Análise:**
+
+- Como seu banco usa `integer` autoincrement como tipo para IDs (não UUIDs), o uso de `BigInt` pode ser desnecessário e até problemático.
+
+- Recomendo trocar para converter para `Number` simples, por exemplo:
+
+```js
+function toNumber(valor){
+    const num = Number(valor);
+    if(Number.isNaN(num)){
+        return false;
+    }
+    return num;
+}
+```
+
+- Isso vai evitar problemas de incompatibilidade de tipos entre o que o banco espera e o que você está passando.
+
+---
+
+### 8. Resumo dos pontos para destravar os bônus:
+
+- **Padronizar o tipo de ID**: usar `integer` (Number) em vez de `BigInt` para IDs, alinhando com o banco.
+
+- **Corrigir os operadores de comparação no tratamento de erros** (usar `===` ao invés de `=`).
+
+- **Garantir que os filtros e ordenações estejam usando os formatos corretos**, especialmente para datas.
+
+- **Testar os endpoints de busca de casos por agente e agente responsável por caso, garantindo que os IDs estejam coerentes e que as queries estejam corretas**.
+
+---
+
+## Recomendações de estudo para você seguir firme nessa reta final! 📚✨
+
+- **Sobre configuração do banco e Knex**:  
+  [Knex.js Migrations e Seeds](https://knexjs.org/guide/migrations.html) e [Knex Query Builder](https://knexjs.org/guide/query-builder.html) são ótimos para entender como criar e manipular dados no banco com segurança.
+
+- **Sobre manipulação de requisições e respostas HTTP** (status codes, métodos, etc):  
+  [Como usar status HTTP corretamente no Express](https://youtu.be/RSZHvQomeKE)
+
+- **Validação de dados e tratamento de erros na API**:  
+  [Como implementar status 400 e 404 customizados](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400) e [404](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404)
+
+- **Boas práticas de arquitetura MVC para Node.js**:  
+  [Arquitetura MVC para Node.js](https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH)
+
+---
+
+## Para finalizar, um resumo rápido dos pontos para você focar:
+
+- 🔄 **Trocar `BigInt` por `Number` para IDs, alinhando com o tipo integer do banco.**  
+- ⚠️ **Corrigir os operadores de comparação no tratamento de erros (`===` ao invés de `=`).**  
+- 📅 **Verificar o formato das datas no filtro e na resposta, garantindo consistência.**  
+- 🔍 **Testar e ajustar os endpoints de busca de agente responsável e casos do agente para garantir o funcionamento correto.**  
+- 📚 **Estudar os recursos indicados para aprimorar validação, tratamento de erros e uso do Knex.**
+
+---
+
+Gabriel, você está muito próximo de destravar essas funcionalidades bônus e deixar sua API ainda mais robusta e profissional! 🚀 Continue assim, revisando esses detalhes e testando bastante. Se precisar, volte a estudar os conceitos que indiquei, pois eles vão te ajudar a consolidar esses conhecimentos.
+
+Você está mandando super bem, parabéns pelo esforço e dedicação! 🎉💪  
+Conte comigo para seguir aprendendo e evoluindo. Até a próxima! 👋😊
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
